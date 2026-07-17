@@ -145,7 +145,7 @@ Classifier       Regressor
 Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/student-performance-prediction.git
+git clone https://github.com/Aryankumar16/grade-predictor.git
 ```
 
 Install dependencies
