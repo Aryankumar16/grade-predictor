@@ -6,15 +6,14 @@ import plotly.graph_objects as go
 import streamlit as st
 from datetime import datetime
 
-
-# 1. PAGE CONFIGURATION 
+# 1. PAGE CONFIGURATION
 st.set_page_config(
     page_title="Student Performance Prediction System",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# CSS
+# Custom CSS
 st.markdown("""
 <style>
 
@@ -36,14 +35,16 @@ h3{
 </style>
 """, unsafe_allow_html=True)
 
-# Formal color mappings
+
 COLOR_SUCCESS = "#2E8B57"  # Sea Green
 COLOR_WARNING = "#DAA520"  # Goldenrod
 COLOR_DANGER = "#CD5C5C"   # Indian Red
 COLOR_PRIMARY = "#4682B4"  # Steel Blue
-COLOR_TEAL = "#16A085"     # Sea Teal for secondary metrics
+COLOR_TEAL = "#16A085"     # Sea Teal 
+
 
 # 2. CORE LOGIC & DEFINITIONS
+
 def classify_grade(score):
     if score >= 16: return "Excellent"
     if score >= 12: return "Good"
@@ -71,10 +72,7 @@ except Exception as e:
     st.error(f"System Error: Model assets could not be located or loaded. ({e})")
     st.stop()
 
-
 # Session state — in-session prediction history
-
-
 if "history_a" not in st.session_state:
     st.session_state.history_a = []
 if "history_b" not in st.session_state:
@@ -82,7 +80,6 @@ if "history_b" not in st.session_state:
 
 
 # 3. HEADER
-
 st.markdown("<h1 style='text-align: center;'>Student Performance Prediction System</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #7F8C8D; font-weight: 300;'>Predictive modeling for student outcomes and behavioral impact.</p>", unsafe_allow_html=True)
 st.divider()
@@ -121,7 +118,21 @@ if analyze_t1:
     probabilities = model1.predict_proba(input_data)[0]
     classes = model1.classes_
 
-    t1_col_results.metric(label="Projected Final Category", value=prediction)
+    # Custom color grading for classification
+    grade_colors = {
+        "Poor": "#B7950B",        # Darker Yellow / Gold
+        "Average": "#F4D03F",     # Lighter Yellow
+        "Good": "#58D68D",        # Lighter Green
+        "Excellent": "#1E8449"    # Darker Green
+    }
+    pred_color = grade_colors.get(prediction, "#FFFFFF")
+
+    t1_col_results.markdown(f"""
+        <div style="margin-bottom: 16px;">
+            <div style="font-size: 14px; color: #EDEADE; margin-bottom: 4px;">Projected Final Category</div>
+            <div style="font-size: 36px; font-weight: 700; color: {pred_color};">{prediction}</div>
+        </div>
+    """, unsafe_allow_html=True)
     
     if prediction in ["Excellent", "Good"]:
         t1_col_results.success(f"Status: Favorable. The trajectory indicates a final grade of {prediction}.")
@@ -182,43 +193,43 @@ if analyze_t1:
     )
     t1_col_results.plotly_chart(fig2, use_container_width=True)
 
-    # --- Left Column: Graph 3 (Behavioral Feature Importance) ---
-    # This plots under the Run button to balance the layout
+    # --- Left Column: Graph 3 (Behavioral Input Profile) ---
     try:
         profile_features = [
-        "Study Habit Strength", 
-        "Failure Avoidance", 
-        "Extracurriculars", 
-        "Connectivity", 
-        "Attendance Profile", 
-        "Social Activity"]
+            "Study Habit Strength", 
+            "Failure Avoidance", 
+            "Extracurriculars", 
+            "Connectivity", 
+            "Attendance Profile", 
+            "Social Activity"
+        ]
 
         profile_vals = [
-        (studytime / 4) * 100,                 # 1-4 scale converted to percentage
-        100 - (failures / 3 * 100),            # 0-3 scale (Inverted: 0 failures = 100 score)
-        100 if activities == "Yes" else 0,
-        100 if internet == "Yes" else 0,
-        max(0, 100 - absences),                # 0 absences = 100 score
-        (goout / 5) * 100   ]                   # 1-5 scale converted to percentage
+            (studytime / 4) * 100,                 # 1-4 scale converted to percentage
+            100 - (failures / 3 * 100),            # 0-3 scale (Inverted: 0 failures = 100 score)
+            100 if activities == "Yes" else 0,
+            100 if internet == "Yes" else 0,
+            max(0, 100 - absences),                # 0 absences = 100 score
+            (goout / 5) * 100                      # 1-5 scale converted to percentage
+        ]
 
         fig3 = px.bar(
-        x=profile_vals, 
-        y=profile_features, 
-        orientation='h',
-        title="Normalized Behavioral Profile",
-        labels={'x': 'Index Score (0-100)', 'y': ''},
-        color_discrete_sequence=[COLOR_TEAL]
-    )
+            x=profile_vals, 
+            y=profile_features, 
+            orientation='h',
+            title="Normalized Behavioral Profile",
+            labels={'x': 'Index Score (0-100)', 'y': ''},
+            color_discrete_sequence=[COLOR_TEAL]
+        )
         fig3.update_layout(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Montserrat"),
-        xaxis=dict(range=[0, 100]),
-        margin=dict(t=40, b=20, l=20, r=20)
-    )
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="Montserrat"),
+            xaxis=dict(range=[0, 100]),
+            margin=dict(t=40, b=20, l=20, r=20)
+        )
         fig3.update_yaxes(autorange="reversed")
         t1_col_input.plotly_chart(fig3, use_container_width=True)
-
         
     except AttributeError:
         pass
@@ -238,6 +249,7 @@ if analyze_t1:
     }
     st.session_state.history_a.append(record_a)
 
+
 else:
     t1_col_results.info("Awaiting input. Please run the analysis to view projections.")
 
@@ -253,29 +265,26 @@ if st.session_state.history_a:
             mime="text/csv",
         )
 
+
 # 5. TAB 2: BEHAVIORAL SCORE FORECASTING
 
 tab2.markdown("### Behavioral Indicators")
 t2_col_a, t2_col_b, t2_col_c = tab2.columns(3, gap="medium")
-
 
 t2_col_a.markdown("#### Academic Engagement")
 study_hours = t2_col_a.number_input("Daily Study (Hours)", min_value=0.0, max_value=12.0, value=3.0, step=0.5)
 attendance_pct = t2_col_a.slider("Attendance Rate (%)", 0.0, 100.0, 85.0, 1.0)
 extracurricular = t2_col_a.selectbox("Co-Curricular Activity", ["Yes", "No"], key="extra_t2")
 
-
 t2_col_b.markdown("#### Health & Well-being")
 mental_health = t2_col_b.slider("Well-being Index (1-10)", 1, 10, 7)
 sleep_hours = t2_col_b.number_input("Nightly Rest (Hours)", min_value=0.0, max_value=12.0, value=7.5, step=0.5)
 exercise_freq = t2_col_b.slider("Weekly Exercise Sessions", 0, 7, 3)
 
-
 t2_col_c.markdown("#### Digital Environment")
 internet_quality = t2_col_c.selectbox("Connectivity Standard", ["Poor", "Average", "Good"], index=1, key="net_t2")
 social_media_hrs = t2_col_c.number_input("Social Media (Hours)", min_value=0.0, max_value=12.0, value=1.5, step=0.5)
 netflix_hrs = t2_col_c.number_input("Streaming Media (Hours)", min_value=0.0, max_value=12.0, value=1.0, step=0.5)
-
 
 distraction = social_media_hrs + netflix_hrs
 study_vs_dist = study_hours - distraction
@@ -323,8 +332,7 @@ if analyze_t2:
         extracurricular_encoded = encoders2["extracurricular_participation"].transform([extracurricular])[0]
     else:
         extracurricular_encoded = {"No": 0, "Yes": 1}.get(extracurricular, 0)
-
-    
+        
     row_data = {
         "study_hours_per_day": study_hours,
         "mental_health_rating": mental_health,
@@ -348,7 +356,24 @@ if analyze_t2:
     
     # Left Results: Formal Executive Summary
     res_col1.markdown("### Executive Summary")
-    res_col1.metric(label="Forecasted Examination Score", value=f"{predicted_score:.1f} / 100")
+
+    # Custom color grading for forecasting score
+    if predicted_score <= 25:
+        score_color = "#E74C3C" # Red
+    elif predicted_score <= 50:
+        score_color = "#F1C40F" # Yellow
+    elif predicted_score <= 75:
+        score_color = "#85C1E9" # Light Blue
+    else:
+        score_color = "#2ECC71" # Green
+
+    res_col1.markdown(f"""
+        <div style="margin-bottom: 16px;">
+            <div style="font-size: 14px; color: #EDEADE; margin-bottom: 4px;">Forecasted Examination Score</div>
+            <div style="font-size: 36px; font-weight: 700; color: {score_color};">{predicted_score:.1f} / 100</div>
+        </div>
+    """, unsafe_allow_html=True)
+
     res_col1.caption(f"Academic Standing: **{standing}**")
     
     suggestion_given = False
@@ -367,7 +392,6 @@ if analyze_t2:
 
     if not suggestion_given:
         res_col1.success("Evaluation: Core behavioral metrics are stable and well-balanced. Maintain current routines.")
-
     
     gauge_color = COLOR_SUCCESS if predicted_score >= 55 else COLOR_DANGER
     fig_gauge = go.Figure(go.Indicator(
@@ -384,8 +408,8 @@ if analyze_t2:
     )
     res_col2.plotly_chart(fig_gauge, use_container_width=True)
 
-    # LIFESTYLE & BEHAVIORAL VISUALIZATIONS
 
+    # LIFESTYLE & BEHAVIORAL VISUALIZATIONS
     tab2.divider()
     tab2.markdown("### Lifestyle & Behavioral Insights")
     
@@ -473,6 +497,7 @@ if analyze_t2:
         "band": standing,
     }
     st.session_state.history_b.append(record_b)
+    
 if st.session_state.history_b:
     with tab2.expander(f"Session history ({len(st.session_state.history_b)} predictions)"):
         df_b = pd.DataFrame(st.session_state.history_b)
@@ -484,8 +509,6 @@ if st.session_state.history_b:
             mime="text/csv",
         )
 
-
 # 6. FOOTER
-
 st.divider()
 st.markdown("<p style='text-align: center; color: #95A5A6; font-size: 0.85em;'>Proprietary Academic Forecasting Model. For advisory purposes only.</p>", unsafe_allow_html=True)
